@@ -12,6 +12,8 @@ from tinkoff.invest import (
     SubscribeCandlesRequest,
     SubscriptionAction,
     SubscriptionInterval,
+
+    TradeInstrument,
 )
 
 import logging
@@ -79,11 +81,18 @@ def ticker_figi_list(ticker_list):
         l.append(ticker_figi(ticker))
     return l
 
-def create_instr_list(figi_list, depth=50):
+def create_instr_list_ob(figi_list, depth=50):
     """Преобразуем список figi в список инструментов для подписки на стакан"""
     instr = []
     for figi in figi_list:
         instr.append(OrderBookInstrument(instrument_id=figi, depth=depth))
+    return instr
+
+def create_instr_list_td(figi_list):
+    """Преобразуем список figi в список инструментов для подписки на сделки"""
+    instr = []
+    for figi in figi_list:
+        instr.append(TradeInstrument(instrument_id=figi))
     return instr
 
 
@@ -108,5 +117,7 @@ def parse_market_data_response(order_book) -> DataFrame:
 
     # Add time column
     table_df['time'] = time
+    table_df['time'] = pd.to_datetime(table_df['time'])
+    table_df['time'] = table_df['time'].dt.strftime('%Y-%m-%d %H:%M:%S') 
    
     return table_df

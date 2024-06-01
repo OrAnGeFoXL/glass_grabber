@@ -26,7 +26,7 @@ from pprint import pprint
 import pandas as pd
 from pandas import DataFrame
 
-from libs.tink import create_instr_list, parse_market_data_response
+from libs.tink import create_instr_list_ob, parse_market_data_response
 
 load_dotenv()
 TOKEN = os.getenv("INVEST_TOKEN_RO")
@@ -47,14 +47,13 @@ logger.setLevel(logging.DEBUG)
 
 #print(TOKEN)
 
-ORDER_BOOK_DEPTH = 30 # (с глубиной 1, 10, 20, 30, 40 или 50)
-ticker_list=['SBER', 'GAZP', 'GMKN', 'POLY', 'ROSN', 'TATN', 'TCSG', 'YNDX']
+ORDER_BOOK_DEPTH = 50 # (с глубиной 1, 10, 20, 30, 40 или 50)
+ticker_list=['SBER', 'GAZP', 'GMKN', 'ROSN','YNDX']
 
-figi_list=['BBG004730N88' , 'BBG004730RP0', 'BBG004731489','BBG004PYF2N3', 'BBG004731354', 'BBG004RVFFC0', 'TCS00A107UL4', 'BBG006L8G4H1']
+figi_list=['BBG004730N88' , 'BBG004730RP0', 'BBG004731489','BBG004731354', 'BBG006L8G4H1']
 
-instr_list=create_instr_list(figi_list)
+instr_list=create_instr_list_ob(figi_list)
 #print(instr_list)
-
 
 
 def compare_dataframes(df1, df2):
@@ -84,7 +83,6 @@ def compare_dataframes(df1, df2):
     return False
 
 
-
 async def main():
 
     async def request_iterator_ob():
@@ -111,7 +109,9 @@ async def main():
 
                 try:
                     r=parse_market_data_response(marketdata.orderbook)
-                    with sqlite3.connect(f'orderbook2_{ORDER_BOOK_DEPTH}_many.db') as conn:  # Connect to the SQLite database                      
+                    with sqlite3.connect(f'orderbook8_{ORDER_BOOK_DEPTH}_many.db') as conn:  # Connect to the SQLite database                      
+                        cursor = conn.cursor()
+                        cursor.execute('PRAGMA cache_size = 10000') 
                         r.to_sql(f'Table_{marketdata.orderbook.figi}',
                                 conn,
                                 if_exists='append',
@@ -122,24 +122,7 @@ async def main():
                     print(e)
                     pass
 
-            async for trades in client.trades_stream.trades_stream(
-                MarketDataRequest(
-                    subscribe_trades_request=SubscribeTradesRequest(
-                        subscription_action=SubscriptionAction.SUBSCRIPTION_ACTION_SUBSCRIBE,
-                        instruments=instr_list
-                    )
-                )
-            ):
-                #logger.info(trades)
-                #pprint(trades)
-
-                try:
-                    r=parse_market_data_response(trades.trades)
-                    with sqlite3.connect(f'trades2_{ORDER_BOOK_DEPTH}_many.db') as conn:  # Connect to the SQLite database                      
-                        r.to_sql(f'Table_{trades.trades.figi}',
-                                conn,
-                                if_exists='append',
-                                index=False)  # Write the DataFrame to the table
+# Write the DataFrame to the table
             
                 
         except Exception as e:
